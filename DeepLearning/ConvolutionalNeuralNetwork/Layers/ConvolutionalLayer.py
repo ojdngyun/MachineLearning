@@ -1,9 +1,8 @@
 import numpy as np
-import Layer
-from util import sigmoid
+from util import normalize
 
 
-class ConvolutionalLayer(Layer):
+class ConvolutionalLayer(object):
 
     def __init__(self, input_shape, filter_size, stride, num_filters, padding=0):
         self.depth, self.height_in, self.width_in = input_shape
@@ -15,16 +14,18 @@ class ConvolutionalLayer(Layer):
         self.weights = np.random.randn(self.num_filters, self.depth, self.filter_size, self.filter_size)
         self.biases = np.random.randn(self.num_filters, 1)
 
-        self.output_dim1 = (self.height_in - self.filter_size + 2 * self.padding) / self.stride + 1  # num of rows
-        self.output_dim2 = (self.width_in - self.filter_size + 2 * self.padding) / self.stride + 1  # num of cols
+        # TODO generalize output dimension with stride value if needed
+        # current formula only works for unit strides
+        self.output_dim1 = (self.height_in - self.filter_size) + (2 * self.padding) + 1  # num of rows
+        self.output_dim2 = (self.width_in - self.filter_size) + (2 * self.padding) + 1  # num of cols
 
         self.z_values = np.zeros((self.num_filters, self.output_dim1, self.output_dim2))
         self.output = np.zeros((self.num_filters, self.output_dim1, self.output_dim2))
 
-    def convolve(self, input_neurons):
+    def convolve(self, image_data):
         """
         convolve input image with filter
-        :param input_neurons: image
+        :param image_data: image
         :return: sigmoid activation matrix after convolution
         """
 
@@ -40,8 +41,12 @@ class ConvolutionalLayer(Layer):
 
             for i in range(act_length1d):  # loop till the output array is filled up -> 1 dimensional (600)
                 # activation -> loop through each convolutional block horizontally
-                self.z_values[j][i] = np.sum(input_neurons[:, row:self.filter_size + row, slide:self.filter_size + slide] * self.weights[j]) + self.biases[j]
-                self.output[j][i] = sigmoid(self.z_values[j][i])
+                # image data is a tuple (depth, 28, 28)
+                self.z_values[j][i] = np.sum(
+                    image_data[:, row:self.filter_size + row, slide:self.filter_size + slide] * self.weights[j]
+                ) + self.biases[j]
+                # normalization using sigmoid -> output 0...1.0
+                self.output[j][i] = normalize(self.z_values[j][i])
                 slide += self.stride
 
                 if (self.filter_size + slide) - self.stride >= self.width_in:  # wrap indices at the end of each row

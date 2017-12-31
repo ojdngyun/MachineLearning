@@ -1,6 +1,6 @@
 import numpy as np
-import Layer
-from util import sigmoid
+from Layer import Layer
+from util import normalize
 
 
 class ClassifyLayer(Layer):
@@ -13,4 +13,4 @@ class ClassifyLayer(Layer):
 
     def classify(self, x):
         self.z_values = np.dot(self.weights, x) + self.biases
-        self.output = sigmoid(self.z_values)
+        self.output = normalize(self.z_values)
