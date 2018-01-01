@@ -1,4 +1,4 @@
-import mnist_loader
+from mnist_loader import load_data_wrapper
 import matplotlib.pyplot as plt
 from matplotlib import cm
 import matplotlib.image as mpimg
@@ -17,7 +17,7 @@ def digit_count(data_list):
         dictionary[value[1]] = dictionary.get(value[1], 0) + 1
     return dictionary
 
-training_data, validation_data, test_data = mnist_loader.load_data_wrapper()
+training_data, validation_data, test_data = load_data_wrapper()
 
 print 'training_data size: ', len(training_data)
 print 'validation_data size: ', len(validation_data), digit_count(validation_data)
