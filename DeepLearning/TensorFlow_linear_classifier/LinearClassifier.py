@@ -1,5 +1,7 @@
 import tensorflow as tf
 from tensorflow.examples.tutorials.mnist import input_data
+import math
+from random import *
 import urllib.request
 from random import *
 from mnist_util import *
@@ -12,27 +14,41 @@ import numpy as np
 np.set_printoptions(suppress=True)
 np.set_printoptions(precision=2)
 
-train_images, train_labels, test_images, test_labels = load_mnist_file('MNIST_data')
-print(train_images.shape, train_labels.shape)
-print(test_images.shape, test_labels.shape)
-
 
 is_train = True
 # is_train = False
 
 
-def test():
-    print('asdf')
+def test_mnist_data():
+    train_images, train_labels, test_images, test_labels = load_mnist_file('MNIST_data')
+    print(train_images.shape, train_labels.shape)
+    print(test_images.shape, test_labels.shape)
+
+    for i in range(10):
+        value = randint(0, len(train_images))
+        plot_images(train_images[value: value + 25], train_labels[value: value + 25])
 
 
-def test_data():
-    random_index = randint(0, len(test_labels))
-    image = test_images[random_index]
-    label = test_labels[random_index]
+def test_tensor_mnist_data():
+    mnist = input_data.read_data_sets('mnist_data/', one_hot=True)
+    for i in range(100):
+        value = randint(0, len(mnist.train.images))
+        plot_images(mnist.train.images[value: value + 25], mnist.train.labels[value: value + 25])
 
-    print(label)
-    plt.imshow(image.reshape((28, 28)))
+
+def plot_images(images, labels):
+    dimension = int(math.ceil(len(images)**0.5))
+    f, axarr = plt.subplots(dimension, dimension)
+    for i, _ in enumerate(labels):
+        axarr[int(i/dimension), i % dimension].imshow(images[i].reshape((28, 28)))
+        axarr[int(i/dimension), i % dimension].set_title(transform_one_hot(labels[i]))
     plt.show()
+
+
+def transform_one_hot(one_hot_value):
+    for index, value in enumerate(one_hot_value):
+        if value == 1:
+            return index
 
 
 def train_model():
@@ -54,11 +70,20 @@ def train_model():
 
     tf.global_variables_initializer().run()
 
-    print(mnist.train.images.shape)
+    for _ in range(1000):
+        batch_xs, batch_ys = mnist.train.next_batch(100)
+        sess.run(train_step, feed_dict={x: batch_xs, y_: batch_ys})
+
+    correct_prediction = tf.equal(tf.argmax(y, 1), tf.argmax(y_, 1))
+
+    accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+
+    print(sess.run(accuracy, feed_dict={x: mnist.test.images, y_: mnist.test.labels}))
 
 
 def train_linear_model():
-    mnist = input_data.read_data_sets('mnist_data/', one_hot=True)
+    train_images, train_labels, test_images, test_labels = load_mnist_file('MNIST_data')
+
     x = tf.placeholder(tf.float32, [None, 784])
     y_ = tf.placeholder(tf.float32, [None, 10])
 
@@ -82,14 +107,12 @@ def train_linear_model():
         batch_index = (i % int(len(train_labels) / batch_size)) * batch_size
         batch_xss = train_images[batch_index:batch_index + batch_size]
         batch_yss = train_labels[batch_index:batch_index + batch_size]
-        batch_xs, batch_ys = mnist.train.next_batch(100)
         # x and y_ are the tensorflow variable defined above
-        sess.run(train_step, feed_dict={x: batch_xs, y_: batch_ys})
+        sess.run(train_step, feed_dict={x: batch_xss, y_: batch_yss})
 
     correct_prediction = tf.equal(tf.argmax(y, 1), tf.argmax(y_, 1))
     accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
-    # print(sess.run(accuracy, feed_dict={x: test_images, y_: test_labels}))
-    print(sess.run(accuracy, feed_dict={x: train_images, y_: train_labels}))
+    print(sess.run(accuracy, feed_dict={x: test_images, y_: test_labels}))
 
     image = test_images[11]
     label = test_labels[11]
@@ -100,7 +123,7 @@ def train_linear_model():
     plt.show()
 
 if is_train:
-    train_linear_model()
-    # train_model()
+    # train_linear_model()
+    train_model()
 else:
-    test()
+    test_tensor_mnist_data()
